@@ -1,0 +1,85 @@
+# Moves the cask to Cumba's latest release, but only after the .dmg matches the release's
+# SHA256SUMS.txt and its build provenance shows it was built by Cumba's release workflow.
+name: Update cask
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      recheck:
+        description: Verify the latest release even if the cask already has it
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-cask
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update cask
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check for a new release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECHECK: ${{ inputs.recheck }}
+        run: |
+          set -euo pipefail
+          tag=$(gh release view --repo LJASP-studio/Cumba --json tagName --jq .tagName)
+          if ! [[ "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "Unexpected tag: $tag" >&2
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}"
+          current=$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/cumba.rb)
+          echo "Latest $version, cask $current"
+          if [ "$version" = "$current" ]; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$version" != "$current" ] || [ "$RECHECK" = "true" ]; then
+            echo "verify=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the disk image
+        if: steps.release.outputs.verify == 'true'
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/release"
+          gh release download "$TAG" --repo LJASP-studio/Cumba --dir "$dir" \
+            --pattern "Cumba-$TAG.dmg" --pattern SHA256SUMS.txt
+          (cd "$dir" && grep " Cumba-$TAG.dmg\$" SHA256SUMS.txt | sha256sum -c -)
+          gh attestation verify "$dir/Cumba-$TAG.dmg" --repo LJASP-studio/Cumba
+          sha=$(sha256sum "$dir/Cumba-$TAG.dmg" | cut -d ' ' -f 1)
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Commit the new version
+        if: steps.release.outputs.new == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          SHA256: ${{ steps.verify.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          sed -i -e "s/^  version \".*\"$/  version \"$VERSION\"/" \
+                 -e "s/^  sha256 \".*\"$/  sha256 \"$SHA256\"/" Casks/cumba.rb
+          git diff
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "cumba $VERSION"
+          git push
