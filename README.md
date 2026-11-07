@@ -7,7 +7,7 @@ brew install --cask ljasp-studio/cumba/cumba
 ```
 
 - Update: `brew upgrade --cask cumba`
-- Uninstall: `brew uninstall --cask cumba`. Add `--zap` to delete its settings, themes and notes too. If you use the Claude Code or Codex hooks, remove them in Cumba's **Settings > Agents** first. The tokens stay in the Keychain; [Cumba's README](https://github.com/LJASP-studio/Cumba#uninstall) shows how to delete them.
+- Uninstall: `brew uninstall --cask cumba`. Add `--zap` to delete its settings, themes and notes too. If you use the Claude Code or Codex hooks, remove them in Cumba's **Settings > Agents** first. The tokens stay in the Keychain; [Cumba's uninstall steps](https://github.com/LJASP-studio/Cumba/blob/main/docs/install.md#uninstall) show how to delete them.
 
 ## What the cask does
 
@@ -15,7 +15,7 @@ brew install --cask ljasp-studio/cumba/cumba
 2. Copies `Cumba.app` to your Applications folder. It needs macOS 26 or later.
 3. Removes macOS's download flag (`com.apple.quarantine`) from `Cumba.app`.
 
-Step 3 is there because Cumba isn't notarized by Apple (that needs a paid developer account), so macOS would block its first launch until you click **Open Anyway** in System Settings. [Why macOS warns](https://github.com/LJASP-studio/Cumba#why-macos-warns) explains what that warning means. If you'd rather see it and decide for yourself, download the `.dmg` from the release page instead of using this tap.
+Step 3 is there because Cumba isn't notarized by Apple (that needs a paid developer account), so macOS would block its first launch until you click **Open Anyway** in System Settings. [Why macOS warns](https://github.com/LJASP-studio/Cumba/blob/main/docs/safety.md#why-macos-warns) explains what that warning means. If you'd rather see it and decide for yourself, download the `.dmg` from the release page instead of using this tap.
 
 ## How new versions get here
 
