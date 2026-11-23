@@ -1,6 +1,6 @@
 cask "cumba" do
-  version "1.3.0"
-  sha256 "15b59f35e2718383f755a0d6780dabea9b6de594edb8514135923d5405da0b0e"
+  version "1.4.0"
+  sha256 "8aab7e9f9c3160fe278d31893f086ed3aa128f5e4901f8a382c4b3748dde6709"
 
   url "https://github.com/LJASP-studio/Cumba/releases/download/v#{version}/Cumba-v#{version}.dmg"
   name "Cumba"
